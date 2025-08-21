@@ -22,7 +22,7 @@ const main = async () => {
 
 	// also deploys new erc20
 	const erc20Factory = await ethers.getContractFactory("SimpleERC20");
-	const erc20 = await erc20Factory.deploy("AvaxTest", "AVAXTEST", 18);
+	const erc20 = await erc20Factory.deploy("PROTest", "PROTEST", 18);
 	await erc20.waitForDeployment();
 
 	// mints some amount to deployer as well

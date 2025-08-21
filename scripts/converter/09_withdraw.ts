@@ -9,13 +9,13 @@ import { mulPointEscalar, Base8 } from "@zk-kit/baby-jubjub";
 const main = async () => {
     // Configure which wallet to use: 1 for first signer, 2 for second signer
     // Can be overridden with environment variable: WALLET_NUMBER=1 or WALLET_NUMBER=2
-    const WALLET_NUMBER = 2;
+    const WALLET_NUMBER = 1;
     
     const wallet = await getWallet(WALLET_NUMBER);
     const userAddress = await wallet.getAddress();
     
     // Hardcoded withdrawal amount (you can change this)
-    const withdrawAmountStr = "40"; // Amount to withdraw
+    const withdrawAmountStr = "2000"; // Amount to withdraw
     
     console.log("💸 Withdrawing encrypted tokens to regular ERC20...");
     console.log("User address:", userAddress);

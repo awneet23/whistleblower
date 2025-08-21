@@ -24,11 +24,11 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      forking: {
-        url: RPC_URL,
-        blockNumber: 59121339,
-        enabled: !!process.env.FORKING,
-      },
+      // forking: {
+      //   url: RPC_URL,
+      //   blockNumber: 59121339,
+      //   enabled: !!process.env.FORKING,
+      // },
     },
     fuji: {
       url: "https://api.avax-test.network/ext/bc/C/rpc",

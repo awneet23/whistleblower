@@ -7,8 +7,8 @@ import { i0, decryptEGCTBalance, createUserFromPrivateKey, getWallet } from "../
 const main = async () => {
     // Configure which wallets to use: 1 for first signer (sender), 2 for second signer (receiver)
     // Can be overridden with environment variables: SENDER_WALLET=1, RECEIVER_WALLET=2
-    const SENDER_WALLET_NUMBER = 1;
-    const RECEIVER_WALLET_NUMBER = 2;
+    const SENDER_WALLET_NUMBER = 2;
+    const RECEIVER_WALLET_NUMBER = 1;
     
     const wallet = await getWallet(SENDER_WALLET_NUMBER);
     const wallet2 = await getWallet(RECEIVER_WALLET_NUMBER);

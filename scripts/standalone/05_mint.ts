@@ -8,7 +8,7 @@ const main = async () => {
     // Configure which wallet to use: 1 for first signer (owner), 2 for second signer (user)
     // Can be overridden with environment variable: WALLET_NUMBER=1 or WALLET_NUMBER=2
     const OWNER_WALLET_NUMBER = 1;
-    const USER_WALLET_NUMBER = 1;
+    const USER_WALLET_NUMBER = 2;
     
     const owner = await getWallet(OWNER_WALLET_NUMBER);
     const wallet = await getWallet(USER_WALLET_NUMBER);
@@ -16,7 +16,7 @@ const main = async () => {
     const userAddress = await wallet.getAddress(); // User to mint tokens to
     
     // Mint amount - let's mint 50 tokens (in encrypted system units, which uses 2 decimals)
-    const mintAmount = BigInt(50 * 100); // 50 tokens with 2 decimal places
+    const mintAmount = BigInt(57 * 100); // 50 tokens with 2 decimal places
     
     console.log("🪙 Private Minting in Standalone EncryptedERC...");
     console.log("Owner (Minter):", ownerAddress);
