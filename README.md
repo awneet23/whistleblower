@@ -69,8 +69,8 @@ Submit the claim. If the news organization approves your teaser, the reward will
 You can then withdraw your encrypted tokens to convert them back to a public ERC20 token.
 
 💻 Tech Stack
-Category	Technology
-Frontend	Next.js, React, TypeScript, Tailwind CSS, Shadcn/UI, Ethers.js
+Category 	            Technology
+Frontend	            Next.js, React, TypeScript, Tailwind CSS, Shadcn/UI, Ethers.js
 Backend & Blockchain	Solidity, Hardhat, Encrypted ERC20 (EERC20), Zero-Knowledge Proofs
-Deployment	Vercel (Frontend), Avalanche Fuji Testnet (Contracts)
-Data & Privacy	IPFS, PGP (openpgp.js), Vercel KV (for off-chain data)
+Deployment	            Vercel (Frontend), Avalanche Fuji Testnet (Contracts)
+Data & Privacy	        IPFS, PGP (openpgp.js), Vercel KV (for off-chain data)
