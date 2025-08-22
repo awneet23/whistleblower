@@ -3,6 +3,7 @@ import './globals.css'
 import Navigation from './components/Navigation'
 import { Toaster } from '@/components/ui/toaster'
 import ParticleBackground from '@/components/ui/particle-background'
+import { WalletProvider } from '@/context/WalletContext'
 
 export const metadata: Metadata = {
   title: 'Anonymous Whistleblower Platform',
@@ -17,14 +18,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background text-foreground font-sans antialiased relative overflow-x-hidden">
-        <ParticleBackground />
-        <div className="relative z-10">
-          <Navigation />
-          <main className="container mx-auto px-4 py-8">
-            {children}
-          </main>
-        </div>
-        <Toaster />
+        <WalletProvider>
+          <ParticleBackground />
+          <div className="relative z-10">
+            <Navigation />
+            <main className="container mx-auto px-4 py-8">
+              {children}
+            </main>
+          </div>
+          <Toaster />
+        </WalletProvider>
       </body>
     </html>
   )

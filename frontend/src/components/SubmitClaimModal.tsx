@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/components/ui/use-toast'
+import { useWallet } from '@/context/WalletContext'
 
 interface Bounty {
   id: number
@@ -36,8 +37,18 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentStep, setCurrentStep] = useState<'form' | 'encrypting' | 'uploading' | 'submitting'>('form')
   const { toast } = useToast()
+  const { isConnected } = useWallet()
 
   const handleSubmit = async () => {
+    if (!isConnected) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet first.",
+        variant: "destructive"
+      })
+      return
+    }
+
     if (!teaser.trim() || !fullMessage.trim()) {
       toast({
         title: "Missing Information",
@@ -223,34 +234,44 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="flex-1 border-accent/50 hover:border-accent hover:bg-accent/10"
-            >
-              Cancel
-            </Button>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+          <div className="flex flex-col gap-3">
+            {!isConnected && (
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-600 dark:text-blue-400">
+                  Please connect your wallet using the button in the header to submit your claim
+                </p>
+              </div>
+            )}
+            
+            <div className="flex gap-3">
               <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !teaser.trim() || !fullMessage.trim()}
-                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="flex-1 border-accent/50 hover:border-accent hover:bg-accent/10"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Submit Claim
-                  </>
-                )}
+                Cancel
               </Button>
-            </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !isConnected || !teaser.trim() || !fullMessage.trim()}
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Submit Claim
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            </div>
           </div>
         </div>
       </DialogContent>

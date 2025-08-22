@@ -1,16 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ethers } from 'ethers'
 import { motion } from 'framer-motion'
-import { Building2, Loader2, CheckCircle, UserPlus, Key, Wallet } from 'lucide-react'
-
-// Extend Window interface for MetaMask
-declare global {
-  interface Window {
-    ethereum?: any
-  }
-}
+import { Building2, Loader2, CheckCircle, UserPlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,42 +10,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
+import { useWallet } from '@/context/WalletContext'
 
 export default function RegisterPage() {
   const [orgName, setOrgName] = useState('')
   const [pgpKey, setPgpKey] = useState('')
-  const [walletConnected, setWalletConnected] = useState(false)
-  const [walletAddress, setWalletAddress] = useState('')
   const [isRegistering, setIsRegistering] = useState(false)
   const { toast } = useToast()
-
-  const connectWallet = async () => {
-    try {
-      if (typeof window.ethereum !== 'undefined') {
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const accounts = await provider.send('eth_requestAccounts', [])
-        setWalletAddress(accounts[0])
-        setWalletConnected(true)
-        toast({
-          title: "Wallet Connected",
-          description: "Your wallet has been connected successfully.",
-        })
-      } else {
-        toast({
-          variant: "destructive",
-          title: "MetaMask Required",
-          description: "Please install MetaMask to continue.",
-        })
-      }
-    } catch (error) {
-      console.error('Error connecting wallet:', error)
-      toast({
-        variant: "destructive",
-        title: "Connection Failed",
-        description: "Failed to connect wallet. Please try again.",
-      })
-    }
-  }
+  const { isConnected, walletAddress } = useWallet()
 
   const registerOrganization = async () => {
     if (!orgName.trim()) {
@@ -74,7 +38,7 @@ export default function RegisterPage() {
       return
     }
 
-    if (!walletConnected) {
+    if (!isConnected) {
       toast({
         variant: "destructive",
         title: "Wallet Required",
@@ -197,21 +161,23 @@ export default function RegisterPage() {
           </Alert>
 
           <div className="flex flex-col gap-4">
-            {!walletConnected ? (
-              <Button onClick={connectWallet} disabled={isRegistering} variant="secondary">
-                Connect Wallet
-              </Button>
+            {!isConnected ? (
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-600 dark:text-blue-400">
+                  Please connect your wallet using the button in the header to register your organization
+                </p>
+              </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <div className="h-2 w-2 bg-green-600 rounded-full"></div>
-                Wallet Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                Wallet Connected: {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
               </div>
             )}
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button 
                 onClick={registerOrganization}
-                disabled={!walletConnected || isRegistering || !orgName.trim() || !pgpKey.trim()}
+                disabled={!isConnected || isRegistering || !orgName.trim() || !pgpKey.trim()}
                 className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-6 text-lg"
               >
                 {isRegistering ? (

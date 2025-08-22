@@ -1,4 +1,10 @@
+'use client'
+
+import { useWallet } from '@/context/WalletContext'
+
 export default function WhistleblowerPage() {
+  const { isConnected } = useWallet()
+
   return (
     <div className="max-w-4xl mx-auto p-8">
       <div className="bg-gray-900 text-white rounded-lg p-8 space-y-6">
@@ -34,13 +40,21 @@ export default function WhistleblowerPage() {
           </div>
           
           <div className="space-y-3">
-            <button className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-md transition-colors">
-              Connect Wallet
-            </button>
-            
-            <button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-3 px-4 rounded-md font-semibold transition-colors">
+            <button 
+              disabled={!isConnected}
+              className={`w-full py-3 px-4 rounded-md font-semibold transition-colors ${
+                isConnected 
+                  ? 'bg-cyan-600 hover:bg-cyan-500 text-white' 
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }`}
+            >
               Submit Anonymously
             </button>
+            {!isConnected && (
+              <p className="text-sm text-gray-400 text-center">
+                Please connect your wallet using the button in the header to submit anonymously
+              </p>
+            )}
           </div>
         </div>
       </div>
