@@ -9,7 +9,7 @@ A decentralized, trustless marketplace for anonymous information disclosure, bui
 | Resource | Link |
 |----------|------|
 | **Live Application** | [whistleblower-sigma.vercel.app](https://whistleblower-sigma.vercel.app) |
-| **Project Roadmap** | [View our Vision on Notion](https://notion.so) |
+| **Project Roadmap** | [View our Vision on Notion](https://www.notion.so/Whistleblower-Privacy-Platform-Project-Roadmap-257232046bc580fcb796e4e33958eb14?source=copy_link) |
 
 ## 💡 The Problem: The Whistleblower's Dilemma
 
