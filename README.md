@@ -108,10 +108,6 @@ Visit `http://localhost:3000` to see the application running locally.
 - **Smart Contract Escrow**: Trustless automated payment system
 - **Anonymous Transactions**: No on-chain link between parties
 
-## 🤝 Contributing
-
-We welcome contributions to improve the platform! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
-
 ## 🛡️ Disclaimer
 
 This platform is designed for legitimate whistleblowing activities to promote transparency and accountability. Users are responsible for complying with all applicable laws and regulations in their jurisdiction.
