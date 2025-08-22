@@ -4,18 +4,46 @@ A decentralized, trustless marketplace for anonymous information disclosure, bui
 
 **This project is a submission for the Avalanche Privacy Hackathon (August 2025).**
 
+
+
 ## 🚀 Live Demo & Links
 
 | Resource | Link |
 |----------|------|
 | **Live Application** | [whistleblower-sigma.vercel.app](https://whistleblower-sigma.vercel.app) |
-| **Project Roadmap** | [View our Vision on Notion](https://www.notion.so/Whistleblower-Privacy-Platform-Project-Roadmap-257232046bc580fcb796e4e33958eb14?source=copy_link) |
+| **Project Roadmap** | [View our Vision on Notion](https://notion.so) |
+
+---
+
+## 📸 Demo Screenshots
+
+### Platform Overview
+<img width="1810" height="766" alt="image" src="https://github.com/user-attachments/assets/54180024-81db-45ff-b5f9-ae934b945d39" />
+
+
+
+### News Organization Dashboard
+<img width="1627" height="894" alt="image" src="https://github.com/user-attachments/assets/58d5a24d-94e1-4aed-9276-b52d19ffdbe7" />
+
+
+
+
+
+### Bounty Creation Process
+<<img width="1718" height="897" alt="image" src="https://github.com/user-attachments/assets/81a2f000-2b7d-4d51-abb5-d6ff37c5ca1d" />
+
+
+
+
+
 
 ## 💡 The Problem: The Whistleblower's Dilemma
 
 The flow of critical information is broken. Whistleblowers possess valuable, often world-changing information, but they have no guarantee of being compensated for their immense risk. They must trust news organizations to pay them after the information is revealed.
 
 Conversely, news organizations cannot risk paying for information before they can verify its credibility. This results in a broken, trust-based system that stifles the flow of information and fails to protect its most vulnerable participants. A simple "burner wallet" is not enough, as a public transaction creates a permanent, analyzable link between the payer and the payee.
+
+---
 
 ## 🎯 Our Solution: A Trustless & Confidential Marketplace
 
@@ -30,7 +58,7 @@ Our architecture is built on three pillars that work together to provide robust 
 This is the heart of our platform's privacy. We use the Encrypted ERC20 standard, which leverages Zero-Knowledge Proofs and ElGamal encryption to enable truly confidential transactions.
 
 - **Anonymous Sender**: The whistleblower's identity is never revealed on-chain
-- **Anonymous Receiver**: The news organization's identity is shielded
+- **Anonymous Receiver**: The news organization's identity is shielded  
 - **Confidential Amounts**: Crucially, the bounty and reward amounts are completely hidden from public view on the blockchain. Only the sender, receiver, and an optional auditor can see the values
 
 ### 🤝 Pillar 2: Trustless Escrow (Smart Contract)
@@ -41,12 +69,12 @@ Our `BountyEscrow.sol` contract acts as an impartial robotic intermediary. News 
 
 The sensitive information itself never touches the blockchain. It is fully encrypted on the user's device using the organization's public PGP key and stored on the decentralized IPFS network. Only the organization with the matching private key can ever decrypt the file.
 
+
 ## 🌐 How to Test the Live Demo
 
 You will need two separate wallets (e.g., two accounts in MetaMask) connected to the **Avalanche Fuji Testnet**.
 
 ### As a News Organization (Wallet A):
-
 1. Go to the `/register` page and register your organization with a name and a PGP public key
 2. Navigate to your `/dashboard` and click "Create Bounty"
 3. Lock a private token amount in escrow (you will need to deposit public tokens first if you have none)
@@ -54,12 +82,12 @@ You will need two separate wallets (e.g., two accounts in MetaMask) connected to
 5. If you approve, click "Release Reward" to automatically pay them and receive the link to the full encrypted data
 
 ### As a Whistleblower (Wallet B):
-
 1. Ensure this wallet is "clean" and has no link to your real identity
 2. Go to the `/bounties` page and find a bounty you want to claim
 3. Click "Submit Claim," write a public teaser and your full confidential message
 4. Submit the claim. If the news organization approves your teaser, the reward will be sent to your wallet's encrypted balance automatically
 5. You can then withdraw your encrypted tokens to convert them back to a public ERC20 token
+
 
 ## 💻 Tech Stack
 
@@ -70,10 +98,11 @@ You will need two separate wallets (e.g., two accounts in MetaMask) connected to
 | **Deployment** | Vercel (Frontend), Avalanche Fuji Testnet (Contracts) |
 | **Data & Privacy** | IPFS, PGP (openpgp.js), Vercel KV (for off-chain data) |
 
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Node.js 18+ and npm/yarn
 - MetaMask or compatible Web3 wallet
 - Access to Avalanche Fuji Testnet
@@ -100,6 +129,7 @@ npm run dev
 
 Visit `http://localhost:3000` to see the application running locally.
 
+
 ## 🔒 Security Features
 
 - **Zero-Knowledge Proofs**: Transactions are verified without revealing sensitive information
@@ -108,10 +138,16 @@ Visit `http://localhost:3000` to see the application running locally.
 - **Smart Contract Escrow**: Trustless automated payment system
 - **Anonymous Transactions**: No on-chain link between parties
 
+
+
+
 ## 🛡️ Disclaimer
 
 This platform is designed for legitimate whistleblowing activities to promote transparency and accountability. Users are responsible for complying with all applicable laws and regulations in their jurisdiction.
 
----
+
 
 **Built for the Avalanche Privacy Hackathon 2025** 🏆
+
+---
+
