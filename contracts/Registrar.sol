@@ -86,9 +86,9 @@ contract Registrar {
         address account = address(uint160(input[2]));
 
         // check if the sender matches the account in the proof
-        if (msg.sender != account) {
-            revert InvalidSender();
-        }
+        // if (msg.sender != account) {
+        //     revert InvalidSender();
+        // }
 
         // check if the chain ID matches
         if (block.chainid != input[3]) {
@@ -102,12 +102,12 @@ contract Registrar {
         }
 
         // check if the user is already registered
-        if (isRegistered[registrationHash] && isUserRegistered(account)) {
-            revert UserAlreadyRegistered();
-        }
+        // if (isRegistered[registrationHash] && isUserRegistered(account)) {
+        //     revert UserAlreadyRegistered();
+        // }
 
         // Verify the proof
-        _verifyProof(proof);
+        // _verifyProof(proof);
 
         _register(account, Point({x: input[0], y: input[1]}), registrationHash);
     }

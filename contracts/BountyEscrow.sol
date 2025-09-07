@@ -4,13 +4,6 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-// Interface to the EncryptedERC contract
-interface IEncryptedERC {
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function transfer(address to, uint256 amount) external returns (bool);
-    function balanceOf(address account) external view returns (uint256);
-}
-
 /**
  * @title BountyEscrow
  * @notice A trustless escrow system for bounties where news organizations can post bounties
@@ -18,7 +11,6 @@ interface IEncryptedERC {
  */
 contract BountyEscrow is ReentrancyGuard {
     // State Variables
-    IEncryptedERC private encryptedToken;
     uint256 public bountyCounter;
     uint256 public claimCounter;
 
@@ -27,7 +19,7 @@ contract BountyEscrow is ReentrancyGuard {
         string title;
         address organization;
         address rewardTokenContract; // The public ERC20 token (e.g., USDC address)
-        uint256 rewardAmount;
+        uint256 rewardAmount; // The reward amount as a standard uint256
         bool isOpen;
         uint256 createdAt;
     }
@@ -53,31 +45,24 @@ contract BountyEscrow is ReentrancyGuard {
     event RewardReleased(uint256 indexed claimId, address indexed whistleblower, uint256 amount);
     event ClaimRejected(uint256 indexed claimId);
 
-    // Constructor
-    constructor(address _encryptedTokenAddress) {
-        require(_encryptedTokenAddress != address(0), "Invalid token address");
-        encryptedToken = IEncryptedERC(_encryptedTokenAddress);
-    }
-
-    // --- Functions ---
-
     /**
-     * @notice Creates a new bounty and locks funds in escrow
-     * @param _title The title/description of the bounty
-     * @param _rewardTokenContract The ERC20 token contract for rewards (for display purposes)
-     * @param _rewardAmount The amount of encrypted tokens to lock as reward
+     * @notice Creates a new bounty and locks funds in escrow using the standard ERC20 approve/transferFrom pattern.
+     * @param _title The title/description of the bounty.
+     * @param _rewardTokenContract The ERC20 token contract for rewards.
+     * @param _rewardAmount The amount of tokens to be locked as a reward.
      */
     function createBounty(
-        string memory _title, 
-        address _rewardTokenContract, 
+        string calldata _title,
+        address _rewardTokenContract,
         uint256 _rewardAmount
     ) external nonReentrant {
         require(bytes(_title).length > 0, "Title cannot be empty");
+        require(_rewardTokenContract != address(0), "Invalid token address");
         require(_rewardAmount > 0, "Reward amount must be greater than 0");
-        
-        // Pull the locked funds from the organization and hold them within this contract
-        bool success = encryptedToken.transferFrom(msg.sender, address(this), _rewardAmount);
-        require(success, "Token transfer for bounty failed");
+
+        // Transfer the specified amount of tokens from the organization to this contract
+        IERC20 token = IERC20(_rewardTokenContract);
+        token.transferFrom(msg.sender, address(this), _rewardAmount);
 
         bountyCounter++;
         bounties[bountyCounter] = Bounty({
@@ -102,15 +87,15 @@ contract BountyEscrow is ReentrancyGuard {
      * @param _encryptedDataCid The IPFS CID of the encrypted full information
      */
     function submitClaim(
-        uint256 _bountyId, 
-        string memory _teaser, 
+        uint256 _bountyId,
+        string memory _teaser,
         string memory _encryptedDataCid
     ) external {
         require(_bountyId > 0 && _bountyId <= bountyCounter, "Invalid bounty ID");
         require(bounties[_bountyId].isOpen, "Bounty is not open");
         require(bytes(_teaser).length > 0, "Teaser cannot be empty");
         require(bytes(_encryptedDataCid).length > 0, "Encrypted data CID cannot be empty");
-        
+
         claimCounter++;
         claims[claimCounter] = Claim({
             id: claimCounter,
@@ -133,7 +118,7 @@ contract BountyEscrow is ReentrancyGuard {
      */
     function releaseReward(uint256 _claimId) external nonReentrant {
         require(_claimId > 0 && _claimId <= claimCounter, "Invalid claim ID");
-        
+
         Claim storage claim = claims[_claimId];
         Bounty storage bounty = bounties[claim.bountyId];
 
@@ -144,9 +129,9 @@ contract BountyEscrow is ReentrancyGuard {
         claim.status = 1; // Mark as Approved
         bounty.isOpen = false; // Close the bounty after one successful claim
 
-        // Transfer the reward from this contract to the anonymous whistleblower
-        bool success = encryptedToken.transfer(claim.whistleblower, bounty.rewardAmount);
-        require(success, "Reward transfer failed");
+        // Transfer the public ERC20 tokens from this contract to the whistleblower
+        IERC20 token = IERC20(bounty.rewardTokenContract);
+        token.transfer(claim.whistleblower, bounty.rewardAmount);
 
         emit RewardReleased(_claimId, claim.whistleblower, bounty.rewardAmount);
     }
@@ -157,7 +142,7 @@ contract BountyEscrow is ReentrancyGuard {
      */
     function rejectClaim(uint256 _claimId) external {
         require(_claimId > 0 && _claimId <= claimCounter, "Invalid claim ID");
-        
+
         Claim storage claim = claims[_claimId];
         Bounty storage bounty = bounties[claim.bountyId];
 
@@ -178,20 +163,20 @@ contract BountyEscrow is ReentrancyGuard {
     function getOpenBounties() external view returns (uint256[] memory) {
         uint256[] memory openBounties = new uint256[](bountyCounter);
         uint256 count = 0;
-        
+
         for (uint256 i = 1; i <= bountyCounter; i++) {
             if (bounties[i].isOpen) {
                 openBounties[count] = i;
                 count++;
             }
         }
-        
+
         // Resize array to actual count
         uint256[] memory result = new uint256[](count);
         for (uint256 i = 0; i < count; i++) {
             result[i] = openBounties[i];
         }
-        
+
         return result;
     }
 

@@ -40,6 +40,10 @@ const main = async () => {
 	});
 	await encryptedERC_.waitForDeployment();
 
+	// deploy BountyEscrow
+	const bountyEscrowFactory = await ethers.getContractFactory("BountyEscrow");
+	const bountyEscrow = await bountyEscrowFactory.deploy();
+	await bountyEscrow.waitForDeployment();
 
 	// Create deployment data object
 	const deploymentData = {
@@ -56,6 +60,7 @@ const main = async () => {
 			registrar: registrar.target,
 			encryptedERC: encryptedERC_.target,
 			testERC20: testERC20,
+			bountyEscrow: bountyEscrow.target,
 		},
 		metadata: {
 			isConverter: true,
@@ -76,6 +81,7 @@ const main = async () => {
 		registrar: registrar.target,
 		encryptedERC: encryptedERC_.target,
 		testERC20: testERC20,
+		bountyEscrow: bountyEscrow.target,
 	});
 
 	// Save deployment data using utility function

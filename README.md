@@ -42,6 +42,7 @@ Our `BountyEscrow.sol` contract acts as an impartial robotic intermediary. News 
 The sensitive information itself never touches the blockchain. It is fully encrypted on the user's device using the organization's public PGP key and stored on the decentralized IPFS network. Only the organization with the matching private key can ever decrypt the file.
 
 ## 🌐 How to Test the Live Demo
+For the Stage 2 submission, development has been focused on the core bounty marketplace (registration, bounty creation, and claim submission). The token conversion (Deposit/Withdraw) functionality on the /converter page has been temporarily disabled in the UI. For the purpose of this demo, our test wallets have been pre-funded with the necessary private tokens to demonstrate the end-to-end bounty flow.
 
 You will need two separate wallets (e.g., two accounts in MetaMask) connected to the **Avalanche Fuji Testnet**.
 
@@ -115,3 +116,4 @@ This platform is designed for legitimate whistleblowing activities to promote tr
 ---
 
 **Built for the Avalanche Privacy Hackathon 2025** 🏆
+
