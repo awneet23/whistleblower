@@ -3,9 +3,6 @@
 A decentralized, trustless marketplace for anonymous information disclosure, built on Avalanche.
 
 *This project is a submission for the Avalanche Privacy Hackathon (August 2025).*
-
-> **Note on Current Functionality:** For the Stage 2 submission, development has been focused on the core bounty marketplace (registration, bounty creation, and claim submission). The token conversion (Deposit/Withdraw) functionality on the `/converter` page has been temporarily disabled in the UI to present a focused and stable demo. For the purpose of this demonstration, our test wallets have been pre-funded with the necessary private tokens.
-
 ---
 
 ## 🚀 Live Demo & Links
@@ -14,7 +11,30 @@ A decentralized, trustless marketplace for anonymous information disclosure, bui
 |----------|------|
 | Live Application | [whistleblower-sigma.vercel.app](https://whistleblower-sigma.vercel.app) |
 | Project Roadmap | [View our Vision on Notion](https://notion.so) |
-| Architecture Diagram | [LINK_TO_YOUR_DIAGRAM_IMAGE] |
+
+
+DEMO SCREENSHOTS
+
+<img width="1899" height="854" alt="image" src="https://github.com/user-attachments/assets/45b3b710-d4a4-45e6-9950-8ecbce86781b" />
+
+
+
+<img width="968" height="836" alt="image" src="https://github.com/user-attachments/assets/a79af38f-26bf-44e6-a8ce-069b3e92ef03" />
+
+
+<img width="1500" height="758" alt="image" src="https://github.com/user-attachments/assets/b650a841-87e5-43fa-b214-1ee9bc5962dc" />
+
+
+<img width="1361" height="586" alt="image" src="https://github.com/user-attachments/assets/dbd3d4e8-d609-4e0f-95d9-50a8b8d4a0d6" />
+
+
+
+<img width="1569" height="653" alt="image" src="https://github.com/user-attachments/assets/aa470e10-8e9c-4c54-ba8e-725b01ced0cd" />
+
+
+
+
+
 
 ---
 
