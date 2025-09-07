@@ -1,3 +1,6 @@
+Important Note: The live Vercel demo points to our stable Stage 1 build. Our latest Stage 2 code is on GitHub, but it failed its final production deployment. Please review our GitHub repo to see our full Stage 2 progress.
+
+
 # 🛡️ Whistleblower Privacy Platform
 
 A decentralized, trustless marketplace for anonymous information disclosure, built on Avalanche.
