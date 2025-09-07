@@ -12,19 +12,52 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 import SubmitClaimModal from '@/components/SubmitClaimModal'
+import { SUPPORTED_TOKENS } from '@/lib/tokens'
 
 interface Bounty {
-  id: number
+  id: string | number
   title: string
+  summary?: string
   organization: string
-  rewardTokenContract: string
+  organizationAddress: string
+  rewardTokenContract?: string
+  rewardToken?: string
   rewardAmount: string
   isOpen: boolean
   createdAt: number
+  source: 'api' | 'contract' | 'mock'
 }
 
+// Mock bounties for initial visual appeal
+const MOCK_BOUNTIES: Bounty[] = [
+  {
+    id: 'mock_1',
+    title: 'Corporate Tax Evasion Evidence',
+    summary: 'Looking for documentation of tax avoidance schemes by major corporations.',
+    organization: '0x742d35Cc6634C0532925a3b8D4C8c8C8b4c8',
+    organizationAddress: '0x742d35Cc6634C0532925a3b8D4C8c8C8b4c8',
+    rewardToken: process.env.NEXT_PUBLIC_TEST_TOKEN_ADDRESS || '',
+    rewardAmount: '5000',
+    isOpen: true,
+    createdAt: Date.now() - 86400000, // 1 day ago
+    source: 'mock'
+  },
+  {
+    id: 'mock_2',
+    title: 'Government Contract Fraud',
+    summary: 'Seeking evidence of fraudulent government contracts or bid rigging.',
+    organization: '0x8ba1f109551bD432803012645Hac136c22C8C8b4',
+    organizationAddress: '0x8ba1f109551bD432803012645Hac136c22C8C8b4',
+    rewardToken: process.env.NEXT_PUBLIC_TEST_TOKEN_ADDRESS || '',
+    rewardAmount: '10000',
+    isOpen: true,
+    createdAt: Date.now() - 172800000, // 2 days ago
+    source: 'mock'
+  }
+]
+
 export default function BountiesPage() {
-  const [bounties, setBounties] = useState<Bounty[]>([])
+  const [bounties, setBounties] = useState<Bounty[]>(MOCK_BOUNTIES)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedBounty, setSelectedBounty] = useState<Bounty | null>(null)
@@ -39,33 +72,99 @@ export default function BountiesPage() {
       setLoading(true)
       setError('')
       
-      // TODO: Replace with actual contract interaction
-      // For now, using mock data
-      const mockBounties: Bounty[] = [
-        {
-          id: 1,
-          title: "Corporate Tax Evasion Evidence",
-          organization: "0x1234...5678",
-          rewardTokenContract: "0xA0b86a33E6417c7C4C8B7e8e6E6E6E6E6E6E6E6E",
-          rewardAmount: "1000",
-          isOpen: true,
-          createdAt: Date.now() - 86400000 // 1 day ago
-        },
-        {
-          id: 2,
-          title: "Environmental Violations Documentation",
-          organization: "0x9876...4321",
-          rewardTokenContract: "0xA0b86a33E6417c7C4C8B7e8e6E6E6E6E6E6E6E6E",
-          rewardAmount: "2500",
-          isOpen: true,
-          createdAt: Date.now() - 172800000 // 2 days ago
-        }
-      ]
+      // Fetch bounties from our backend API
+      const response = await fetch('/api/bounties')
+      const result = await response.json()
       
-      setBounties(mockBounties)
+      let apiBounties: Bounty[] = []
+      if (result.success && result.bounties) {
+        apiBounties = result.bounties.map((bounty: any) => ({
+          ...bounty,
+          organization: bounty.organizationAddress,
+          organizationAddress: bounty.organizationAddress,
+          rewardTokenContract: bounty.rewardToken,
+          source: 'api' as const
+        }))
+      }
+
+      // Optionally fetch from contract as well (for bounties created directly on-chain)
+      let contractBounties: Bounty[] = []
+      try {
+        const bountyEscrowAddress = process.env.NEXT_PUBLIC_BOUNTY_ESCROW_ADDRESS
+        if (bountyEscrowAddress) {
+          const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL)
+          const bountyEscrowContract = new ethers.Contract(
+            bountyEscrowAddress,
+            [
+              'function bountyCounter() view returns (uint256)',
+              'function bounties(uint256) view returns (uint256 id, string title, address organization, address rewardTokenContract, uint256 rewardAmount, bool isOpen, uint256 createdAt)'
+            ],
+            provider
+          )
+
+          const bountyCount = await bountyEscrowContract.bountyCounter()
+          
+          for (let i = 1; i <= Number(bountyCount); i++) {
+            try {
+              const bountyData = await bountyEscrowContract.bounties(i)
+              contractBounties.push({
+                id: Number(bountyData.id),
+                title: bountyData.title,
+                organization: bountyData.organization,
+                organizationAddress: bountyData.organization,
+                rewardTokenContract: bountyData.rewardTokenContract,
+                rewardAmount: bountyData.rewardAmount.toString(),
+                isOpen: bountyData.isOpen,
+                createdAt: Number(bountyData.createdAt) * 1000, // Convert to milliseconds
+                source: 'contract'
+              })
+            } catch (error) {
+              console.error(`Error fetching contract bounty ${i}:`, error)
+            }
+          }
+        }
+      } catch (contractError) {
+        console.error('Error fetching contract bounties:', contractError)
+        // Don't fail the whole operation if contract fetch fails
+      }
+
+      // Combine all bounties: API bounties first (newest), then contract bounties, then mock bounties
+      const allBounties = [
+        ...apiBounties.reverse(), // Newest API bounties first
+        ...contractBounties.reverse(), // Then contract bounties
+        ...MOCK_BOUNTIES // Finally mock bounties for visual appeal
+      ]
+
+      // Remove duplicates with improved detection logic
+      const uniqueBounties = allBounties
+        .filter((bounty, index, self) => {
+          // For API bounties, keep them as priority
+          if (bounty.source === 'api') return true
+          
+          // For contract and mock bounties, check if there's already an API bounty with same title and org
+          const hasApiVersion = self.some(b => 
+            b.source === 'api' && 
+            b.title.toLowerCase().trim() === bounty.title.toLowerCase().trim() && 
+            b.organization.toLowerCase() === bounty.organization.toLowerCase()
+          )
+          
+          // If there's an API version, skip this contract/mock bounty
+          if (hasApiVersion) return false
+          
+          // Otherwise, use the original duplicate detection
+          return index === self.findIndex(b => 
+            b.title.toLowerCase().trim() === bounty.title.toLowerCase().trim() && 
+            b.organization.toLowerCase() === bounty.organization.toLowerCase()
+          )
+        })
+        .sort((a, b) => b.createdAt - a.createdAt)
+
+      setBounties(uniqueBounties)
     } catch (err) {
       console.error('Error fetching bounties:', err)
       setError(err instanceof Error ? err.message : 'Failed to load bounties')
+      // Keep mock bounties on error
+      setBounties(MOCK_BOUNTIES)
     } finally {
       setLoading(false)
     }
@@ -80,15 +179,52 @@ export default function BountiesPage() {
     const diff = now - timestamp
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
     const hours = Math.floor(diff / (1000 * 60 * 60))
-    
+    const minutes = Math.floor(diff / (1000 * 60))
+
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
     return 'Just now'
+  }
+
+  const getRewardTokenSymbol = (bounty: Bounty) => {
+    const tokenAddress = bounty.rewardTokenContract || bounty.rewardToken
+    if (!tokenAddress) return 'Tokens'
+    
+    const token = SUPPORTED_TOKENS.find(t => t.address.toLowerCase() === tokenAddress.toLowerCase())
+    return token ? token.symbol : 'Tokens'
+  }
+
+  const formatRewardAmount = (bounty: Bounty) => {
+    const tokenAddress = bounty.rewardTokenContract || bounty.rewardToken
+    if (!tokenAddress) return bounty.rewardAmount
+    
+    const token = SUPPORTED_TOKENS.find(t => t.address.toLowerCase() === tokenAddress.toLowerCase())
+    if (!token) return bounty.rewardAmount
+    
+    try {
+      return ethers.formatUnits(bounty.rewardAmount, token.decimals)
+    } catch {
+      return bounty.rewardAmount
+    }
   }
 
   const handleSubmitClaim = (bounty: Bounty) => {
     setSelectedBounty(bounty)
     setShowSubmitModal(true)
+  }
+
+  const getBountySourceBadge = (source: string) => {
+    switch (source) {
+      case 'api':
+        return <Badge variant="outline" className="border-blue-500/50 text-blue-400 text-xs">New</Badge>
+      case 'contract':
+        return <Badge variant="outline" className="border-purple-500/50 text-purple-400 text-xs">On-Chain</Badge>
+      case 'mock':
+        return <Badge variant="outline" className="border-gray-500/50 text-gray-400 text-xs">Featured</Badge>
+      default:
+        return null
+    }
   }
 
   return (
@@ -149,7 +285,7 @@ export default function BountiesPage() {
             </Alert>
           )}
 
-          {!loading && !error && bounties.length === 0 && (
+          {!loading && bounties.length === 0 && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No Active Bounties</AlertTitle>
@@ -159,11 +295,11 @@ export default function BountiesPage() {
             </Alert>
           )}
 
-          {!loading && !error && bounties.length > 0 && (
+          {bounties.length > 0 && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {bounties.map((bounty, index) => (
                 <motion.div
-                  key={bounty.id}
+                  key={`${bounty.source}_${bounty.id}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -171,9 +307,12 @@ export default function BountiesPage() {
                   <Card className="glass-card border-accent/10 hover:border-accent/30 transition-all duration-300 h-full">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
-                        <Badge variant="secondary" className="bg-accent/20 text-accent">
-                          #{bounty.id}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-accent/20 text-accent">
+                            #{bounty.id}
+                          </Badge>
+                          {getBountySourceBadge(bounty.source)}
+                        </div>
                         <Badge variant="outline" className="border-green-500/50 text-green-400">
                           Open
                         </Badge>
@@ -181,6 +320,11 @@ export default function BountiesPage() {
                       <CardTitle className="text-lg line-clamp-2">
                         {bounty.title}
                       </CardTitle>
+                      {bounty.summary && (
+                        <CardDescription className="text-sm line-clamp-2">
+                          {bounty.summary}
+                        </CardDescription>
+                      )}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
@@ -197,7 +341,7 @@ export default function BountiesPage() {
                       <div className="bg-accent/10 rounded-lg p-3 border border-accent/20">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-accent">
-                            {bounty.rewardAmount} pUSDC
+                            {formatRewardAmount(bounty)} {getRewardTokenSymbol(bounty)}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Locked in Escrow

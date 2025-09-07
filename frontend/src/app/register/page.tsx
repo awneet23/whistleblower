@@ -11,13 +11,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { useWallet } from '@/context/WalletContext'
+import { useRouter } from 'next/navigation'
 
 export default function RegisterPage() {
   const [orgName, setOrgName] = useState('')
   const [pgpKey, setPgpKey] = useState('')
   const [isRegistering, setIsRegistering] = useState(false)
   const { toast } = useToast()
-  const { isConnected, walletAddress } = useWallet()
+  const { isConnected, address, checkRegistrationStatus } = useWallet()
+  const router = useRouter()
 
   const registerOrganization = async () => {
     if (!orgName.trim()) {
@@ -34,6 +36,15 @@ export default function RegisterPage() {
         variant: "destructive",
         title: "Missing Information",
         description: "Please enter your public PGP key.",
+      })
+      return
+    }
+
+    if (!address) {
+      toast({
+        variant: "destructive",
+        title: "Wallet Required",
+        description: "Wallet address is required. Please connect your wallet first.",
       })
       return
     }
@@ -58,7 +69,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           orgName: orgName.trim(),
           pgpKey: pgpKey.trim(),
-          walletAddress: walletAddress,
+          walletAddress: address,
         }),
       })
 
@@ -72,9 +83,20 @@ export default function RegisterPage() {
         description: "Your organization has been registered successfully.",
       })
 
+      console.log('Register Page - Registration successful, calling checkRegistrationStatus with address:', address)
+      
+      // Update global registration state immediately
+      await checkRegistrationStatus(address)
+      
+      console.log('Register Page - checkRegistrationStatus completed')
+
       // Clear form
       setOrgName('')
       setPgpKey('')
+
+      console.log('Register Page - Redirecting to dashboard')
+      // Redirect to dashboard
+      router.push('/dashboard')
 
     } catch (error) {
       console.error('Registration error:', error)
@@ -170,7 +192,7 @@ export default function RegisterPage() {
             ) : (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <div className="h-2 w-2 bg-green-600 rounded-full"></div>
-                Wallet Connected: {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
+                Wallet Connected: {address?.slice(0, 6)}...{address?.slice(-4)}
               </div>
             )}
 

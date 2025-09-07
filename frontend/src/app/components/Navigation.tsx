@@ -2,18 +2,18 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Shield, Send, Database, UserPlus, Coins, Wallet, LogOut } from 'lucide-react'
+import { Shield, Send, Database, UserPlus, Coins, Wallet, LogOut, ArrowLeftRight, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWallet } from '@/context/WalletContext'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Navigation() {
-  const { isConnected, walletAddress, connectWallet, disconnectWallet } = useWallet()
+  const { isConnected, address, connect, disconnect } = useWallet()
   const { toast } = useToast()
 
   const handleConnectWallet = async () => {
     try {
-      await connectWallet()
+      await connect()
       toast({
         title: "Wallet Connected",
         description: "Your wallet has been connected successfully.",
@@ -28,7 +28,7 @@ export default function Navigation() {
   }
 
   const handleDisconnectWallet = () => {
-    disconnectWallet()
+    disconnect()
     toast({
       title: "Wallet Disconnected",
       description: "Your wallet has been disconnected.",
@@ -78,6 +78,24 @@ export default function Navigation() {
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link 
+                href="/converter" 
+                className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent/20 hover:text-accent border border-transparent hover:border-accent/30"
+              >
+                <ArrowLeftRight className="h-4 w-4" />
+                Converter
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link 
+                href="/organizations" 
+                className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent/20 hover:text-accent border border-transparent hover:border-accent/30"
+              >
+                <Users className="h-4 w-4" />
+                Organizations
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link 
                 href="/register" 
                 className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent/20 hover:text-accent border border-transparent hover:border-accent/30"
               >
@@ -101,7 +119,7 @@ export default function Navigation() {
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-md border border-green-200 dark:border-green-800">
                   <div className="h-2 w-2 bg-green-600 rounded-full"></div>
-                  <span className="font-mono">{walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}</span>
+                  <span className="font-mono">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
                 </div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button

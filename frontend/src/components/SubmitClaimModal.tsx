@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Upload, Lock, Send, AlertCircle, Loader2 } from 'lucide-react'
+import { Upload, Lock, Send, AlertCircle, Loader2, Shield, Check } from 'lucide-react'
 import * as openpgp from 'openpgp'
 
 import { Button } from '@/components/ui/button'
@@ -17,10 +17,18 @@ interface Bounty {
   id: number
   title: string
   organization: string
+  organizationAddress: string
   rewardTokenContract: string
   rewardAmount: string
   isOpen: boolean
   createdAt: number
+}
+
+interface Organization {
+  organizationName: string
+  organizationAddress: string
+  pgpPublicKey: string
+  registeredAt: number
 }
 
 interface SubmitClaimModalProps {
@@ -33,11 +41,41 @@ interface SubmitClaimModalProps {
 export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }: SubmitClaimModalProps) {
   const [teaser, setTeaser] = useState('')
   const [fullMessage, setFullMessage] = useState('')
-  const [organizationPgpKey, setOrganizationPgpKey] = useState('')
+  const [organizationData, setOrganizationData] = useState<Organization | null>(null)
+  const [loadingOrgData, setLoadingOrgData] = useState(false)
+  const [orgDataError, setOrgDataError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentStep, setCurrentStep] = useState<'form' | 'encrypting' | 'uploading' | 'submitting'>('form')
   const { toast } = useToast()
   const { isConnected } = useWallet()
+
+  // Fetch organization data when modal opens
+  useEffect(() => {
+    if (isOpen && bounty.organizationAddress) {
+      fetchOrganizationData()
+    }
+  }, [isOpen, bounty.organizationAddress])
+
+  const fetchOrganizationData = async () => {
+    try {
+      setLoadingOrgData(true)
+      setOrgDataError(null)
+      
+      const response = await fetch(`/api/get-org-data?address=${bounty.organizationAddress}`)
+      
+      if (!response.ok) {
+        throw new Error('Organization not found or not registered')
+      }
+
+      const data = await response.json()
+      setOrganizationData(data.organization)
+    } catch (error) {
+      console.error('Error fetching organization data:', error)
+      setOrgDataError(error instanceof Error ? error.message : 'Failed to fetch organization data')
+    } finally {
+      setLoadingOrgData(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!isConnected) {
@@ -58,23 +96,26 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
       return
     }
 
+    if (!organizationData?.pgpPublicKey) {
+      toast({
+        title: "Encryption Error",
+        description: "Organization PGP key not available for secure encryption.",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       setIsSubmitting(true)
       setCurrentStep('encrypting')
 
-      // Step 1: Encrypt the full message with organization's PGP key
-      let encryptedMessage: string
-      if (organizationPgpKey.trim()) {
-        const publicKey = await openpgp.readKey({ armoredKey: organizationPgpKey })
-        const encrypted = await openpgp.encrypt({
-          message: await openpgp.createMessage({ text: fullMessage }),
-          encryptionKeys: publicKey
-        })
-        encryptedMessage = encrypted as string
-      } else {
-        // For demo purposes, if no PGP key provided, use base64 encoding
-        encryptedMessage = btoa(fullMessage)
-      }
+      // Step 1: Encrypt the full message with organization's PGP key (mandatory)
+      const publicKey = await openpgp.readKey({ armoredKey: organizationData.pgpPublicKey })
+      const encrypted = await openpgp.encrypt({
+        message: await openpgp.createMessage({ text: fullMessage }),
+        encryptionKeys: publicKey
+      })
+      const encryptedMessage = encrypted as string
 
       setCurrentStep('uploading')
 
@@ -103,7 +144,7 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
 
       toast({
         title: "Claim Submitted Successfully!",
-        description: `Your claim for bounty #${bounty.id} has been submitted. The organization will review it soon.`,
+        description: `Your claim for bounty #${bounty.id} has been submitted securely. The organization will review it soon.`,
       })
 
       onSuccess()
@@ -124,7 +165,8 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
     if (!isSubmitting) {
       setTeaser('')
       setFullMessage('')
-      setOrganizationPgpKey('')
+      setOrganizationData(null)
+      setOrgDataError(null)
       setCurrentStep('form')
       onClose()
     }
@@ -133,9 +175,9 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
   const getStepMessage = () => {
     switch (currentStep) {
       case 'encrypting':
-        return 'Encrypting your message...'
+        return 'Encrypting your message with PGP...'
       case 'uploading':
-        return 'Uploading to IPFS...'
+        return 'Uploading encrypted data to IPFS...'
       case 'submitting':
         return 'Submitting claim to blockchain...'
       default:
@@ -152,19 +194,38 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
             Submit Claim for Bounty #{bounty.id}
           </DialogTitle>
           <DialogDescription>
-            Submit your claim for "{bounty.title}". Your full message will be encrypted and stored securely.
+            Submit your claim for "{bounty.title}". Your message will be automatically encrypted with the organization's PGP key.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          <Alert>
-            <Lock className="h-4 w-4" />
-            <AlertTitle>Privacy & Security</AlertTitle>
-            <AlertDescription>
-              Your full message will be encrypted with the organization's PGP key before being uploaded to IPFS.
-              Only the teaser will be visible publicly until your claim is approved.
-            </AlertDescription>
-          </Alert>
+          {/* Security Status Alert */}
+          {loadingOrgData ? (
+            <Alert>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <AlertTitle>Loading Security Information</AlertTitle>
+              <AlertDescription>
+                Fetching organization's encryption key for secure communication...
+              </AlertDescription>
+            </Alert>
+          ) : orgDataError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Security Error</AlertTitle>
+              <AlertDescription>
+                {orgDataError}. Cannot proceed without secure encryption.
+              </AlertDescription>
+            </Alert>
+          ) : organizationData ? (
+            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+              <Shield className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800 dark:text-green-200">🔒 Secure Encryption Ready</AlertTitle>
+              <AlertDescription className="text-green-700 dark:text-green-300">
+                Your message will be securely encrypted with the public key for <strong>{organizationData.organizationName}</strong>.
+                Only they can decrypt and read your submission.
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
           <div className="space-y-4">
             <div className="space-y-2">
@@ -175,7 +236,7 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
                 value={teaser}
                 onChange={(e) => setTeaser(e.target.value)}
                 className="min-h-[80px] bg-background/50 border-accent/20 focus:border-accent"
-                disabled={isSubmitting}
+                disabled={isSubmitting || loadingOrgData}
               />
               <p className="text-xs text-muted-foreground">
                 This teaser helps the organization understand what you're offering without revealing sensitive details.
@@ -186,31 +247,14 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
               <Label htmlFor="fullMessage">Full Confidential Message *</Label>
               <Textarea
                 id="fullMessage"
-                placeholder="Your complete, detailed information (this will be encrypted)"
+                placeholder="Your complete, detailed information (this will be automatically encrypted)"
                 value={fullMessage}
                 onChange={(e) => setFullMessage(e.target.value)}
                 className="min-h-[120px] bg-background/50 border-accent/20 focus:border-accent"
-                disabled={isSubmitting}
+                disabled={isSubmitting || loadingOrgData}
               />
               <p className="text-xs text-muted-foreground">
-                Include all relevant details, evidence, and context. This will be encrypted before storage.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pgpKey">Organization's PGP Public Key (Optional)</Label>
-              <Textarea
-                id="pgpKey"
-                placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----
-...
------END PGP PUBLIC KEY BLOCK-----"
-                value={organizationPgpKey}
-                onChange={(e) => setOrganizationPgpKey(e.target.value)}
-                className="min-h-[100px] bg-background/50 border-accent/20 focus:border-accent font-mono text-xs"
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-muted-foreground">
-                If provided, your message will be encrypted with this key. Otherwise, basic encoding will be used.
+                Include all relevant details, evidence, and context. This will be automatically encrypted with PGP before storage.
               </p>
             </div>
           </div>
@@ -218,7 +262,7 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
           {isSubmitting && (
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertTitle>Processing Submission</AlertTitle>
+              <AlertTitle>Processing Secure Submission</AlertTitle>
               <AlertDescription>
                 {getStepMessage()}
               </AlertDescription>
@@ -255,18 +299,18 @@ export default function SubmitClaimModal({ bounty, isOpen, onClose, onSuccess }:
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
                 <Button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !isConnected || !teaser.trim() || !fullMessage.trim()}
+                  disabled={isSubmitting || !isConnected || !teaser.trim() || !fullMessage.trim() || !organizationData || loadingOrgData}
                   className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Submitting...
+                      Submitting Securely...
                     </>
                   ) : (
                     <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Submit Claim
+                      <Lock className="h-4 w-4 mr-2" />
+                      Submit Encrypted Claim
                     </>
                   )}
                 </Button>

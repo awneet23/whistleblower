@@ -4,9 +4,16 @@ import { kv } from '@vercel/kv'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('Registration API - Incoming data:', { 
+      orgName: body.orgName, 
+      walletAddress: body.walletAddress,
+      pgpKeyLength: body.pgpKey?.length 
+    })
+
     const { orgName, pgpKey, walletAddress } = body
 
     if (!orgName || typeof orgName !== 'string') {
+      console.log('Registration API - Error: Missing organization name')
       return NextResponse.json(
         { error: 'Organization name is required' },
         { status: 400 }
@@ -14,6 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!pgpKey || typeof pgpKey !== 'string') {
+      console.log('Registration API - Error: Missing PGP key')
       return NextResponse.json(
         { error: 'PGP key is required' },
         { status: 400 }
@@ -21,6 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!walletAddress || typeof walletAddress !== 'string') {
+      console.log('Registration API - Error: Missing wallet address')
       return NextResponse.json(
         { error: 'Wallet address is required' },
         { status: 400 }
@@ -30,6 +39,7 @@ export async function POST(request: NextRequest) {
     // Validate PGP key format (basic check)
     if (!pgpKey.includes('-----BEGIN PGP PUBLIC KEY BLOCK-----') || 
         !pgpKey.includes('-----END PGP PUBLIC KEY BLOCK-----')) {
+      console.log('Registration API - Error: Invalid PGP key format')
       return NextResponse.json(
         { error: 'Invalid PGP key format' },
         { status: 400 }
@@ -44,18 +54,30 @@ export async function POST(request: NextRequest) {
       registeredAt: new Date().toISOString()
     }
 
-    await kv.set(walletAddress.toLowerCase(), organizationData)
+    console.log('Registration API - Attempting to save to KV database...')
+    
+    try {
+      await kv.set(walletAddress.toLowerCase(), organizationData)
+      console.log('Registration API - Successfully saved to KV database')
+      
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'Organization registered successfully',
+          walletAddress: walletAddress.toLowerCase()
+        },
+        { status: 200 }
+      )
+    } catch (kvError) {
+      console.error('Registration API - KV save error:', kvError)
+      return NextResponse.json(
+        { error: 'Failed to save to database.' },
+        { status: 500 }
+      )
+    }
 
-    return NextResponse.json(
-      { 
-        success: true, 
-        message: 'Organization registered successfully',
-        walletAddress: walletAddress.toLowerCase()
-      },
-      { status: 200 }
-    )
   } catch (error) {
-    console.error('Error registering organization:', error)
+    console.error('Registration API - General error:', error)
     return NextResponse.json(
       { error: 'Failed to register organization' },
       { status: 500 }

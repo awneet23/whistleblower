@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ExternalLink, RefreshCw, FileText, Info, AlertCircle, Database, Download, Coins, Plus, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { ExternalLink, RefreshCw, FileText, Info, AlertCircle, Database, Download, Coins, Plus, Eye, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react'
+import { ethers } from 'ethers'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
+import { useWallet } from '@/context/WalletContext'
+import { SUPPORTED_TOKENS } from '@/lib/tokens'
 
 interface Bounty {
   id: number
@@ -32,100 +35,97 @@ interface Claim {
 }
 
 export default function DashboardPage() {
-  const [submissions, setSubmissions] = useState<string[]>([])
   const [bounties, setBounties] = useState<Bounty[]>([])
   const [claims, setClaims] = useState<Claim[]>([])
-  const [loading, setLoading] = useState(true)
   const [bountiesLoading, setBountiesLoading] = useState(true)
   const [error, setError] = useState('')
   const [processingClaim, setProcessingClaim] = useState<number | null>(null)
   const { toast } = useToast()
+  const { address, signer, isConnected } = useWallet()
 
-  useEffect(() => {
-    fetchSubmissions()
-    fetchMyBounties()
-  }, [])
+  const fetchMyBounties = useCallback(async () => {
+    if (!isConnected || !address) return
 
-  const fetchSubmissions = async () => {
-    try {
-      setLoading(true)
-      setError('')
-      const response = await fetch('/api/submissions')
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch submissions')
-      }
-      
-      const data = await response.json()
-      setSubmissions(data.submissions || [])
-    } catch (err) {
-      console.error('Error fetching submissions:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load submissions')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchMyBounties = async () => {
     try {
       setBountiesLoading(true)
+      setError('')
+
+      const bountyEscrowAddress = process.env.NEXT_PUBLIC_BOUNTY_ESCROW_ADDRESS
+      if (!bountyEscrowAddress) {
+        throw new Error('Bounty escrow contract address not configured')
+      }
+
+      const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL)
+      const bountyEscrowContract = new ethers.Contract(
+        bountyEscrowAddress,
+        [
+          'function bountyCounter() view returns (uint256)',
+          'function claimCounter() view returns (uint256)',
+          'function bounties(uint256) view returns (uint256 id, string title, address organization, address rewardTokenContract, uint256 rewardAmount, bool isOpen, uint256 createdAt)',
+          'function claims(uint256) view returns (uint256 id, uint256 bountyId, address whistleblower, string teaser, string encryptedDataCid, uint8 status, uint256 submittedAt)'
+        ],
+        provider
+      )
+
+      const bountyCount = await bountyEscrowContract.bountyCounter()
+      const fetchedBounties: Bounty[] = []
+      for (let i = 1; i <= Number(bountyCount); i++) {
+        try {
+          const bountyData = await bountyEscrowContract.bounties(i)
+          if (bountyData.organization.toLowerCase() === address.toLowerCase()) {
+            fetchedBounties.push({
+              id: Number(bountyData.id),
+              title: bountyData.title,
+              organization: bountyData.organization,
+              rewardTokenContract: bountyData.rewardTokenContract,
+              rewardAmount: bountyData.rewardAmount.toString(),
+              isOpen: bountyData.isOpen,
+              createdAt: Number(bountyData.createdAt)
+            })
+          }
+        } catch (error) {
+          console.error(`Error fetching bounty ${i}:`, error)
+        }
+      }
+
+      const claimCount = await bountyEscrowContract.claimCounter()
+      const fetchedClaims: Claim[] = []
+      const myBountyIds = new Set(fetchedBounties.map(b => b.id))
+
+      for (let i = 1; i <= Number(claimCount); i++) {
+        try {
+          const claimData = await bountyEscrowContract.claims(i)
+          if (myBountyIds.has(Number(claimData.bountyId))) {
+            fetchedClaims.push({
+              id: Number(claimData.id),
+              bountyId: Number(claimData.bountyId),
+              whistleblower: claimData.whistleblower,
+              teaser: claimData.teaser,
+              encryptedDataCid: claimData.encryptedDataCid,
+              status: Number(claimData.status),
+              submittedAt: Number(claimData.submittedAt)
+            })
+          }
+        } catch (error) {
+          console.error(`Error fetching claim ${i}:`, error)
+        }
+      }
       
-      // TODO: Replace with actual contract interaction to get user's bounties
-      // For now, using mock data
-      const mockBounties: Bounty[] = [
-        {
-          id: 1,
-          title: "Corporate Tax Evasion Evidence",
-          organization: "0x1234567890123456789012345678901234567890",
-          rewardTokenContract: "0xA0b86a33E6417c7C4C8B7e8e6E6E6E6E6E6E6E6E",
-          rewardAmount: "1000",
-          isOpen: true,
-          createdAt: Date.now() - 86400000
-        },
-        {
-          id: 2,
-          title: "Environmental Violations Documentation",
-          organization: "0x1234567890123456789012345678901234567890",
-          rewardTokenContract: "0xA0b86a33E6417c7C4C8B7e8e6E6E6E6E6E6E6E6E",
-          rewardAmount: "2500",
-          isOpen: false,
-          createdAt: Date.now() - 172800000
-        }
-      ]
-
-      const mockClaims: Claim[] = [
-        {
-          id: 1,
-          bountyId: 1,
-          whistleblower: "0x9876543210987654321098765432109876543210",
-          teaser: "I have internal documents showing systematic tax avoidance schemes involving offshore entities.",
-          encryptedDataCid: "QmX1Y2Z3A4B5C6D7E8F9G0H1I2J3K4L5M6N7O8P9Q0R1S2T",
-          status: 0,
-          submittedAt: Date.now() - 3600000
-        },
-        {
-          id: 2,
-          bountyId: 1,
-          whistleblower: "0x1111222233334444555566667777888899990000",
-          teaser: "Financial records showing unreported income and fraudulent deductions over 3 years.",
-          encryptedDataCid: "QmA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W",
-          status: 0,
-          submittedAt: Date.now() - 7200000
-        }
-      ]
-
-      setBounties(mockBounties)
-      setClaims(mockClaims)
+      setBounties(fetchedBounties.reverse())
+      setClaims(fetchedClaims.reverse())
     } catch (err) {
       console.error('Error fetching bounties:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load your bounties and claims.')
     } finally {
       setBountiesLoading(false)
     }
-  }
+  }, [address, isConnected])
 
-  const formatCid = (cid: string) => {
-    return `${cid.slice(0, 8)}...${cid.slice(-8)}`
-  }
+  useEffect(() => {
+    if (isConnected) {
+      fetchMyBounties()
+    }
+  }, [isConnected, fetchMyBounties])
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -133,48 +133,50 @@ export default function DashboardPage() {
 
   const formatTimeAgo = (timestamp: number) => {
     const now = Date.now()
-    const diff = now - timestamp
-    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const diff = now - timestamp * 1000 // Convert seconds to milliseconds
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor(diff / (1000 * 60))
+
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
     return 'Just now'
   }
 
+  const getRewardToken = (bounty: Bounty) => {
+    const token = SUPPORTED_TOKENS.find(t => t.address.toLowerCase() === bounty.rewardTokenContract.toLowerCase())
+    if (!token) return { symbol: 'N/A', decimals: 18 }
+    return token
+  }
+
   const handleReleaseReward = async (claimId: number) => {
+    if (!signer) {
+      toast({ title: "Wallet not connected", variant: "destructive" })
+      return
+    }
+
     try {
       setProcessingClaim(claimId)
-      
-      // TODO: Replace with actual contract interaction
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Update claim status locally
-      setClaims(prev => prev.map(claim => 
-        claim.id === claimId 
-          ? { ...claim, status: 1 }
-          : claim
-      ))
-      
-      // Update bounty status to closed
-      const claim = claims.find(c => c.id === claimId)
-      if (claim) {
-        setBounties(prev => prev.map(bounty => 
-          bounty.id === claim.bountyId 
-            ? { ...bounty, isOpen: false }
-            : bounty
-        ))
-      }
-      
-      toast({
-        title: "Reward Released!",
-        description: "The reward has been automatically transferred to the whistleblower.",
-      })
-    } catch (error) {
+      toast({ title: "Processing Reward...", description: "Please confirm the transaction in your wallet." })
+
+      const bountyEscrowAddress = process.env.NEXT_PUBLIC_BOUNTY_ESCROW_ADDRESS
+      const bountyEscrowContract = new ethers.Contract(
+        bountyEscrowAddress!,
+        ['function releaseReward(uint256 claimId) external'],
+        signer
+      )
+
+      const tx = await bountyEscrowContract.releaseReward(claimId)
+      await tx.wait()
+
+      toast({ title: "Reward Released!", description: "The reward has been transferred to the whistleblower." })
+      fetchMyBounties() // Refresh data
+    } catch (error: any) {
       console.error('Error releasing reward:', error)
       toast({
         title: "Release Failed",
-        description: "Failed to release reward. Please try again.",
+        description: error.reason || error.message || "Failed to release reward. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -183,28 +185,32 @@ export default function DashboardPage() {
   }
 
   const handleRejectClaim = async (claimId: number) => {
+    if (!signer) {
+      toast({ title: "Wallet not connected", variant: "destructive" })
+      return
+    }
+
     try {
       setProcessingClaim(claimId)
-      
-      // TODO: Replace with actual contract interaction
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Update claim status locally
-      setClaims(prev => prev.map(claim => 
-        claim.id === claimId 
-          ? { ...claim, status: 2 }
-          : claim
-      ))
-      
-      toast({
-        title: "Claim Rejected",
-        description: "The claim has been rejected.",
-      })
-    } catch (error) {
+      toast({ title: "Rejecting Claim...", description: "Please confirm the transaction in your wallet." })
+
+      const bountyEscrowAddress = process.env.NEXT_PUBLIC_BOUNTY_ESCROW_ADDRESS
+      const bountyEscrowContract = new ethers.Contract(
+        bountyEscrowAddress!,
+        ['function rejectClaim(uint256 claimId) external'],
+        signer
+      )
+
+      const tx = await bountyEscrowContract.rejectClaim(claimId)
+      await tx.wait()
+
+      toast({ title: "Claim Rejected", description: "The claim has been successfully rejected." })
+      fetchMyBounties() // Refresh data
+    } catch (error: any) {
       console.error('Error rejecting claim:', error)
       toast({
         title: "Rejection Failed",
-        description: "Failed to reject claim. Please try again.",
+        description: error.reason || error.message || "Failed to reject claim. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -225,8 +231,26 @@ export default function DashboardPage() {
     }
   }
 
+  if (!isConnected) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <Card className="glass-card aurora-glow border-accent/20">
+          <CardHeader>
+            <CardTitle>Dashboard</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Wallet Not Connected</AlertTitle>
+              <AlertDescription>Please connect your wallet to view your dashboard.</AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   const pendingClaims = claims.filter(claim => claim.status === 0)
-  const myBounties = bounties // In real implementation, filter by connected wallet
 
   return (
     <motion.div 
@@ -249,7 +273,7 @@ export default function DashboardPage() {
         <CardContent className="space-y-6">
           <div className="flex justify-between items-center">
             <div className="text-sm text-muted-foreground">
-              {bountiesLoading ? 'Loading...' : `${myBounties.length} bounties • ${pendingClaims.length} pending claims`}
+              {bountiesLoading ? 'Loading...' : `${bounties.length} bounties • ${pendingClaims.length} pending claims`}
             </div>
             <div className="flex gap-2">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -278,7 +302,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {!bountiesLoading && myBounties.length === 0 && (
+          {bountiesLoading && (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            </div>
+          )}
+
+          {!bountiesLoading && error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error Loading Bounties</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {!bountiesLoading && !error && bounties.length === 0 && (
             <Alert>
               <Info className="h-4 w-4" />
               <AlertTitle>No Bounties Created</AlertTitle>
@@ -288,11 +326,12 @@ export default function DashboardPage() {
             </Alert>
           )}
 
-          {!bountiesLoading && myBounties.length > 0 && (
+          {!bountiesLoading && !error && bounties.length > 0 && (
             <div className="space-y-4">
-              {myBounties.map((bounty) => {
+              {bounties.map((bounty) => {
                 const bountyClaims = claims.filter(claim => claim.bountyId === bounty.id)
                 const pendingBountyClaims = bountyClaims.filter(claim => claim.status === 0)
+                const rewardToken = getRewardToken(bounty)
                 
                 return (
                   <motion.div
@@ -307,7 +346,7 @@ export default function DashboardPage() {
                           <div>
                             <CardTitle className="text-lg">{bounty.title}</CardTitle>
                             <CardDescription className="mt-1">
-                              Created {formatTimeAgo(bounty.createdAt)} • {bounty.rewardAmount} pUSDC reward
+                              Created {formatTimeAgo(bounty.createdAt)} • {ethers.formatUnits(bounty.rewardAmount, rewardToken.decimals)} {rewardToken.symbol} reward
                             </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
@@ -374,13 +413,13 @@ export default function DashboardPage() {
                                       <div className="flex gap-2">
                                         <Button
                                           onClick={() => handleRejectClaim(claim.id)}
-                                          disabled={processingClaim === claim.id}
+                                          disabled={processingClaim !== null}
                                           size="sm"
                                           variant="outline"
                                           className="border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-400"
                                         >
                                           {processingClaim === claim.id ? (
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="h-4 w-4 animate-spin" />
                                           ) : (
                                             <XCircle className="h-4 w-4 mr-2" />
                                           )}
@@ -388,12 +427,12 @@ export default function DashboardPage() {
                                         </Button>
                                         <Button
                                           onClick={() => handleReleaseReward(claim.id)}
-                                          disabled={processingClaim === claim.id}
+                                          disabled={processingClaim !== null}
                                           size="sm"
                                           className="bg-accent hover:bg-accent/90 text-accent-foreground"
                                         >
                                           {processingClaim === claim.id ? (
-                                            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                           ) : (
                                             <CheckCircle className="h-4 w-4 mr-2" />
                                           )}
@@ -414,173 +453,6 @@ export default function DashboardPage() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Anonymous Submissions Section */}
-      <Card className="glass-card aurora-glow border-accent/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl">
-            <Database className="h-8 w-8 text-accent" />
-            Anonymous Submissions Dashboard
-          </CardTitle>
-          <CardDescription>
-            Encrypted submissions from whistleblowers. Download and decrypt using your private PGP key.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>For News Organizations</AlertTitle>
-            <AlertDescription>
-              These are encrypted submissions from whistleblowers. Click on any IPFS link to download 
-              the encrypted file, then decrypt it using your private PGP key.
-            </AlertDescription>
-          </Alert>
-
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              {loading ? 'Loading...' : `Total submissions: ${submissions.length}`}
-            </div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button 
-                onClick={fetchSubmissions}
-                disabled={loading}
-                variant="outline"
-                size="sm"
-                className="border-accent/50 hover:border-accent hover:bg-accent/10"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-            </motion.div>
-          </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {!loading && !error && submissions.length === 0 && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertTitle>No Submissions</AlertTitle>
-              <AlertDescription>
-                No submissions found. When whistleblowers submit encrypted messages, they will appear here.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {!loading && !error && submissions.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-            <Card className="glass-card border-accent/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-accent" />
-                  Encrypted Submissions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Submission #</TableHead>
-                      <TableHead>IPFS CID</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {submissions.map((cid, index) => (
-                      <motion.tr
-                        key={cid}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="border-b border-accent/10 hover:bg-accent/5"
-                      >
-                        <TableCell className="font-medium">
-                          #{submissions.length - index}
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {formatCid(cid)}
-                          </code>
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <motion.div whileHover={{ scale: 1.05 }} className="inline-block">
-                            <Button
-                              asChild
-                              size="sm"
-                              variant="outline"
-                              className="border-accent/50 hover:border-accent hover:bg-accent/10"
-                            >
-                              <a 
-                                href={`https://ipfs.io/ipfs/${cid}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <Download className="h-4 w-4 mr-2" />
-                                IPFS Gateway
-                              </a>
-                            </Button>
-                          </motion.div>
-                          <motion.div whileHover={{ scale: 1.05 }} className="inline-block">
-                            <Button
-                              asChild
-                              size="sm"
-                              className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                            >
-                              <a 
-                                href={`https://gateway.pinata.cloud/ipfs/${cid}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <Download className="h-4 w-4 mr-2" />
-                                Alternative Gateway
-                              </a>
-                            </Button>
-                          </motion.div>
-                        </TableCell>
-                      </motion.tr>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-            </motion.div>
-          )}
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-          <Card className="glass-card border-accent/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-accent" />
-                How to Decrypt Submissions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal list-inside space-y-2 text-sm">
-                <li>Click on an IPFS link to download the encrypted file</li>
-                <li>Use your private PGP key to decrypt the message</li>
-                <li>
-                  Command line: <code className="bg-muted px-2 py-1 rounded text-xs">gpg --decrypt filename.txt</code>
-                </li>
-                <li>Or use a PGP tool like Kleopatra, GPG Suite, or online tools</li>
-              </ol>
-            </CardContent>
-          </Card>
-          </motion.div>
         </CardContent>
       </Card>
     </motion.div>
