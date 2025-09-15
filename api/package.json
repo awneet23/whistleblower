@@ -1,0 +1,26 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@zk-kit/baby-jubjub": "^1.0.3",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "hardhat": "^3.0.6",
+    "maci-crypto": "^2.5.0",
+    "snarkjs": "^0.7.5",
+    "viem": "^2.37.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.4.0",
+    "@types/snarkjs": "^0.7.9"
+  }
+}

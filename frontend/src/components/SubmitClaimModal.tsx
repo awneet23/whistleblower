@@ -12,17 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/components/ui/use-toast'
 import { useWallet } from '@/context/WalletContext'
-
-interface Bounty {
-  id: number
-  title: string
-  organization: string
-  organizationAddress: string
-  rewardTokenContract: string
-  rewardAmount: string
-  isOpen: boolean
-  createdAt: number
-}
+import type { Bounty } from '../app/types/bounty'
 
 interface Organization {
   organizationName: string
