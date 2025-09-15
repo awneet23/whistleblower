@@ -1,12 +1,13 @@
 import { Base8, mulPointEscalar, subOrder } from "@zk-kit/baby-jubjub";
-import { formatPrivKeyForBabyJub } from "maci-crypto";
+import { formatPrivKeyForBabyJub, genPrivKey, hash2 } from "maci-crypto";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import { ethers } from "hardhat";
 import { decryptPoint } from "../jub/jub";
-import { decryptPCT } from "../../test/helpers";
-import { User } from "../../test/user";
 import * as fs from "fs";
 import * as path from "path";
+import { processPoseidonDecryption } from "..";
+import { poseidon3 } from "poseidon-lite";
+import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/dist/src/signer-with-address";
 
 /**
  * Derives a private key from a signature using the i0 function
@@ -299,6 +300,47 @@ export async function getDecryptedBalance(
     return totalBalance;
 }
 
+class User {
+	privateKey: bigint;
+	formattedPrivateKey: bigint;
+	publicKey: bigint[];
+	signer: SignerWithAddress;
+
+	constructor(signer: SignerWithAddress) {
+		this.signer = signer;
+		// gen private key
+		this.privateKey = genPrivKey();
+		// format private key for baby jubjub
+		this.formattedPrivateKey =
+			formatPrivKeyForBabyJub(this.privateKey) % subOrder;
+		// gen public key
+		this.publicKey = mulPointEscalar(Base8, this.formattedPrivateKey).map((x) =>
+			BigInt(x),
+		);
+	}
+
+	get address() {
+		const address = hash2(this.publicKey);
+		return address;
+	}
+
+	/**
+	 *
+	 * @param chainId Chain ID of the network
+	 * @returns The registration hash for the user CRH(CHAIN_ID | PRIVATE_KEY | ADDRESS)
+	 */
+	genRegistrationHash(chainId: bigint) {
+		const registrationHash = poseidon3([
+			chainId,
+			this.formattedPrivateKey,
+			BigInt(this.signer.address),
+		]);
+
+		return registrationHash;
+	}
+}
+
+
 /**
  * Creates a User object with custom private key
  * @param privateKey The private key to use for the user
@@ -388,3 +430,31 @@ export function saveDeploymentData(deploymentData: any, baseDir: string, isConve
         timestamp
     };
 }
+
+/**
+ * Function for decrypting a PCT
+ * @param privateKey
+ * @param pct PCT to be decrypted
+ * @param length Length of the original input array
+ * @returns decrypted - Decrypted message as an array
+ */
+export async function decryptPCT(
+	privateKey: bigint,
+	pct: bigint[],
+	length = 1,
+) {
+	// extract the ciphertext, authKey, and nonce from the pct
+	const ciphertext = pct.slice(0, 4);
+	const authKey = pct.slice(4, 6);
+	const nonce = pct[6];
+
+	const decrypted = processPoseidonDecryption(
+		ciphertext,
+		authKey,
+		nonce,
+		privateKey,
+		length,
+	);
+
+	return decrypted;
+};

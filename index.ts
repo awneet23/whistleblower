@@ -171,7 +171,7 @@ const eventListener = new ContractEventListener();
 // API Routes
 app.use(express.json())
 
-app.get('/health', (req, res) => {
+app.get('/health', (req: express.Request, res: express.Response) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -179,7 +179,7 @@ app.get('/health', (req, res) => {
     })
 })
 
-app.get('/status', (req, res) => {
+app.get('/status', (req: express.Request, res: express.Response) => {
     res.json(eventListener.getStatus())
 })
 
