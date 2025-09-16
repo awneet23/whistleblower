@@ -82,7 +82,8 @@ This hybrid model provides the best of both worlds: the unbreakable, trustless g
 
 ## 🏗️ Architecture
 
-*[PASTE YOUR ARCHITECTURE DIAGRAM HERE]*
+<img width="1584" height="873" alt="image" src="https://github.com/user-attachments/assets/7c395820-9046-4976-b1fd-e96c70e0dcef" />
+
 
 ### Architecture Flow:
 
@@ -115,9 +116,9 @@ This hybrid model provides the best of both worlds: the unbreakable, trustless g
 - **📱 User-Friendly**: Intuitive interface for both sources and organizations
 - **🛡️ Secure**: Advanced cryptographic protections throughout
 
-*[PASTE APPLICATION SCREENSHOTS HERE]*
 
----
+
+
 
 ## 🛠️ Technology Stack
 
