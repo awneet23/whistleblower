@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": " BUILD_PATH='../build/frontend' next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
