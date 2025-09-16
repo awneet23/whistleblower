@@ -10,7 +10,7 @@
 
 🌐 **[Live Demo]** - *[https://whistleblower-platform-gamma.vercel.app/]*
 
-📹 **[Demo Video]** - *[PASTE YOUR DEMO VIDEO LINK HERE]*
+📹 **[Demo Video]** - *[https://youtu.be/bKrcB8PbHSk]*
 
 ---
 
