@@ -7,11 +7,13 @@ import { privateKeyToAccount } from 'viem/accounts'
 import { depositERC20 } from './eer20-operations/deposit'
 import { EERC_CONTRACT, ERC20_TEST, REGISTRAR_CONTRACT } from './eer20-operations/contracts'
 import { privateTransfer } from './eer20-operations/transfer'
+import path from 'path'
 
 // Load environment variables
 dotenv.config()
 
 const app = express()
+app.use(express.static(path.join(__dirname, "frontend")));
 const PORT = process.env.PORT || 3000
 
 const RPC_URL = process.env.RPC_URL
@@ -191,7 +193,9 @@ app.use((error: Error, req: express.Request, res: express.Response, next: expres
         error: error.message
     })
 })
-
+app.get('*', async (req: any, res: any) => {
+    res.sendFile(path.join(__dirname, "frontend", "index.html"))
+})
 // Start the server
 async function startServer() {
     try {
