@@ -28,9 +28,6 @@ interface WalletContextType {
   // --- New BountyEscrow Simulation State & Functions ---
   bounties: Bounty[];
   claims: Claim[];
-  createBounty: (title: string, rewardTokenContract: string, rewardAmount: string) => Promise<void>;
-  submitClaim: (bountyId: number, teaser: string, encryptedDataCid: string) => Promise<void>;
-  releaseReward: (claimId: number) => Promise<void>;
   getBounties: () => Bounty[];
   getClaimsForBounty: (bountyId: number) => Claim[];
   getBountiesByOrganization: (organizationAddress: string) => Bounty[];
@@ -317,75 +314,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }
 
-  // --- New BountyEscrow Simulation Functions ---
-  const createBounty = async (title: string, rewardTokenContract: string, rewardAmount: string) => {
-    if (!walletAddress) { 
-      console.error("Wallet not connected. Cannot create bounty.");
-      return;
-    }
-    return new Promise<void>(resolve => {
-      setTimeout(() => {
-        setBountyCounter(prev => prev + 1);
-        const newBounty: Bounty = {
-          id: bountyCounter + 1,
-          title,
-          organization: walletAddress,
-          rewardTokenContract,
-          rewardAmount,
-          isOpen: true,
-        };
-        setBounties(prev => [...prev, newBounty]);
-        console.log("Simulated Bounty Created:", newBounty);
-        resolve();
-      }, 2000); // Simulate 2-second transaction delay
-    });
-  };
-
-  const submitClaim = async (bountyId: number, teaser: string, encryptedDataCid: string) => {
-    if (!walletAddress) { 
-      console.error("Wallet not connected. Cannot submit claim.");
-      return;
-    }
-    return new Promise<void>(resolve => {
-      setTimeout(() => {
-        setClaimCounter(prev => prev + 1);
-        const newClaim: Claim = {
-          id: claimCounter + 1,
-          bountyId,
-          whistleblower: walletAddress,
-          teaser,
-          encryptedDataCid,
-          status: 0, // Pending
-        };
-        setClaims(prev => [...prev, newClaim]);
-        console.log("Simulated Claim Submitted:", newClaim);
-        resolve();
-      }, 2000); // Simulate 2-second transaction delay
-    });
-  };
-
-  const releaseReward = async (claimId: number) => {
-    return new Promise<void>(resolve => {
-      setTimeout(() => {
-        setClaims(prevClaims =>
-          prevClaims.map(claim =>
-            claim.id === claimId ? { ...claim, status: 1 } : claim // Mark as Approved
-          )
-        );
-        const releasedClaim = claims.find(c => c.id === claimId);
-        if (releasedClaim) {
-          setBounties(prevBounties =>
-            prevBounties.map(bounty =>
-              bounty.id === releasedClaim.bountyId ? { ...bounty, isOpen: false } : bounty // Close bounty
-            )
-          );
-        }
-        console.log("Simulated Reward Released for Claim:", claimId);
-        resolve();
-      }, 2000); // Simulate 2-second transaction delay
-    });
-  };
-
   const getBounties = () => { return bounties; };
 
   const getClaimsForBounty = (bountyId: number) => { 
@@ -412,9 +340,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
     // --- New BountyEscrow Simulation Context Values ---
     bounties,
     claims,
-    createBounty,
-    submitClaim,
-    releaseReward,
     getBounties,
     getClaimsForBounty,
     getBountiesByOrganization,

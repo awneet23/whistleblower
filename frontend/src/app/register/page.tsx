@@ -16,10 +16,9 @@ import { useToast } from '@/hooks/use-toast'
 import { useWallet } from '@/context/WalletContext'
 import { useRouter } from 'next/navigation'
 
-import { MainContractABI } from '../abis/NewsOrganization'
+import { MainContractABI, MainContractAddress } from '../abis/MainContract'
 import { useMetaMask } from '../hooks/useMetamask'
 import { getContractInstance } from '../utils/getContract';
-import { MainContractAddress } from '../consts'
 
 export default function RegisterPage() {
   const [orgName, setOrgName] = useState('')

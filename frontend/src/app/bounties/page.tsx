@@ -16,8 +16,7 @@ import SubmitClaimModal from '@/components/SubmitClaimModal'
 import { avalancheFuji } from 'viem/chains'
 
 import { getContractInstance } from '../utils/getContract';
-import { MainContractAddress } from '../consts'
-import { MainContractABI } from '../abis/NewsOrganization'
+import { MainContractABI, MainContractAddress } from '../abis/MainContract'
 import { useMetaMask } from '../hooks/useMetamask'
 import { toast } from '@/components/ui/use-toast'
 import { Bounty } from '../types/bounty'

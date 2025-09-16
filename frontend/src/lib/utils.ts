@@ -73,7 +73,7 @@ export function formatTokenAmount(amount: string, decimals: number): string {
   const quotient = value / divisor
   const remainder = value % divisor
   
-  if (remainder === 0n) {
+  if (remainder === BigInt(0)) {
     return quotient.toString()
   }
   

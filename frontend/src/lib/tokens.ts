@@ -8,7 +8,7 @@ export interface Token {
 
 export const SUPPORTED_TOKENS: Token[] = [
   { 
-    address: '0x0B1f1DFA854de3534F72C5Aca1c3Ef0f09A04E06', // Correct TEST token address from deployment
+    address: '0x81FeDE901c8415A412f3407f6cEDBCDDC89D888c', // Correct TEST token address from deployment
     symbol: 'TEST', 
     name: 'Test Token',
     decimals: 18,

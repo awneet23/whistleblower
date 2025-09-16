@@ -9,7 +9,7 @@ export interface EthereumProvider {
 
 declare global {
   interface Window {
-    ethereum: EthereumProvider | undefined;
+    // ethereum: EthereumProvider | undefined;
   }
 }
 

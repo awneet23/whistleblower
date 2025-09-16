@@ -143,14 +143,14 @@ export default function DashboardPage() {
       toast({ title: "Processing Reward...", description: "Please confirm the transaction in your wallet." })
 
       const bountyEscrowAddress = process.env.NEXT_PUBLIC_BOUNTY_ESCROW_ADDRESS
-      const bountyEscrowContract = new ethers.Contract(
-        bountyEscrowAddress!,
-        ['function releaseReward(uint256 claimId) external'],
-        account
-      )
+      // const bountyEscrowContract = new ethers.Contract(
+      //   bountyEscrowAddress!,
+      //   ['function releaseReward(uint256 claimId) external'],
+      //   account
+      // )
 
-      const tx = await bountyEscrowContract.releaseReward(claimId)
-      await tx.wait()
+      // const tx = await bountyEscrowContract.releaseReward(claimId)
+      // await tx.wait()
 
       toast({ title: "Reward Released!", description: "The reward has been transferred to the whistleblower." })
       fetchMyBounties() // Refresh data
@@ -177,14 +177,14 @@ export default function DashboardPage() {
       toast({ title: "Rejecting Claim...", description: "Please confirm the transaction in your wallet." })
 
       const bountyEscrowAddress = process.env.NEXT_PUBLIC_BOUNTY_ESCROW_ADDRESS
-      const bountyEscrowContract = new ethers.Contract(
-        bountyEscrowAddress!,
-        ['function rejectClaim(uint256 claimId) external'],
-        account
-      )
+      // const bountyEscrowContract = new ethers.Contract(
+      //   bountyEscrowAddress!,
+      //   ['function rejectClaim(uint256 claimId) external'],
+      //   account
+      // )
 
-      const tx = await bountyEscrowContract.rejectClaim(claimId)
-      await tx.wait()
+      // const tx = await bountyEscrowContract.rejectClaim(claimId)
+      // await tx.wait()
 
       toast({ title: "Claim Rejected", description: "The claim has been successfully rejected." })
       fetchMyBounties() // Refresh data

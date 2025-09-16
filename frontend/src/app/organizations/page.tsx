@@ -12,8 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import { avalancheFuji } from 'viem/chains'
 
 import { getContractInstance } from '../utils/getContract';
-import { MainContractAddress } from '../consts'
-import { MainContractABI } from '../abis/NewsOrganization'
+import { MainContractABI, MainContractAddress } from '../abis/MainContract'
 import { useMetaMask } from '../hooks/useMetamask'
 
 interface Organization {

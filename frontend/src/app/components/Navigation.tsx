@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useWallet } from '@/context/WalletContext'
 import { useToast } from '@/hooks/use-toast'
 import { useMetaMask } from '../hooks/useMetamask'
-import WalletConnect from '../connect/page'
+import WalletConnect from '../../components/WalletConnect'
 
 export default function Navigation() {
   // const { isConnected, address, connect, disconnect } = useWallet()

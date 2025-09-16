@@ -17,8 +17,12 @@ import { SUPPORTED_TOKENS, Token } from '@/lib/tokens'
 import { useWallet } from '@/context/WalletContext'
 import { useRouter } from 'next/navigation'
 import { useMetaMask } from '../hooks/useMetamask'
+import { avalancheFuji } from 'viem/chains'
+import { MainContractAddress, MainContractABI } from '../abis/MainContract'
+import { getContractInstance } from '../utils/getContract'
 
 export default function CreateBountyPage() {
+  const [contract, setContract] = useState<any | undefined>();
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
   const [rewardToken, setRewardToken] = useState('')
@@ -28,42 +32,27 @@ export default function CreateBountyPage() {
   const { toast } = useToast()
   const router = useRouter()
   
-  const { address, signer, isRegistered, isCheckingRegistration } = useWallet()
   const { account, isConnected, chainId, getNetworkName } = useMetaMask();
+  useEffect(() => {
+    connectMainContract();
+  }, [isConnected])
 
-  // Debug logging to track state values
-  console.log('CreateBounty - Current state:', { 
-    address, 
-    isConnected, 
-    isRegistered, 
-    isCheckingRegistration 
-  })
-
-  // Show loading state while checking registration
-  if (isCheckingRegistration) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-2xl mx-auto space-y-6"
-      >
-        <Card className="glass-card aurora-glow border-accent/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl">
-              <Plus className="h-8 w-8 text-accent" />
-              Create Intelligence Bounty
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-accent mr-3" />
-              <span>Checking registration status...</span>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    )
+  async function connectMainContract() {
+    try {
+      const { contract: contractInstance } = await getContractInstance(
+        MainContractAddress,
+        MainContractABI,
+        avalancheFuji,
+      );
+      setContract(contractInstance);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      toast({
+        variant: "destructive",
+        title: "Couldn't connect to contract",
+        description: errorMessage,
+      })
+    }
   }
 
   // Show connection/registration status without redirecting
@@ -96,37 +85,6 @@ export default function CreateBountyPage() {
     )
   }
 
-  if (!isRegistered) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-2xl mx-auto space-y-6"
-      >
-        <Card className="glass-card aurora-glow border-accent/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl">
-              <Plus className="h-8 w-8 text-accent" />
-              Create Intelligence Bounty
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Registration Required</AlertTitle>
-              <AlertDescription>
-                You must be registered to create bounties. Please visit the{' '}
-                <a href="/register" className="text-accent hover:underline">Register Org page</a>{' '}
-                to register first.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      </motion.div>
-    )
-  }
-
   const handleCreateBounty = async () => {
     if (!title.trim() || !summary.trim() || !rewardToken || !rewardAmount) {
       toast({
@@ -137,7 +95,7 @@ export default function CreateBountyPage() {
       return
     }
 
-    if (!address || !signer) {
+    if (!account) {
       toast({
         title: "Wallet Not Connected",
         description: "Please connect your wallet to create a bounty.",
@@ -159,23 +117,14 @@ export default function CreateBountyPage() {
       setCurrentStep('saving')
       toast({ title: "Publishing Bounty", description: "Saving bounty details to the public board..." })
 
-      const response = await fetch('/api/bounties', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          organization: address, 
-          rewardAmount: rewardAmount,
-          rewardTokenContract: selectedToken.address 
-        })
-      })
-
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to save bounty to backend')
+      if (contract) {
+        const txHash = await contract.write.createBounty(
+          [title, summary, rewardAmount],
+          {
+            account,
+          }
+        )
+        console.log('Create Bounty Transaction Hash:', txHash)
       }
 
       toast({
