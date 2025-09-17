@@ -179,7 +179,7 @@ const eventListener = new ContractEventListener();
 // API Routes
 app.use(express.json())
 
-app.get('/health', (req: express.Request, res: express.Response) => {
+app.get('/api/health', (req: express.Request, res: express.Response) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -187,7 +187,7 @@ app.get('/health', (req: express.Request, res: express.Response) => {
     })
 })
 
-app.get('/status', (req: express.Request, res: express.Response) => {
+app.get('/api/status', (req: express.Request, res: express.Response) => {
     res.json(eventListener.getStatus())
 })
 
@@ -199,9 +199,17 @@ app.use((error: Error, req: express.Request, res: express.Response, next: expres
         error: error.message
     })
 })
-app.get('/', async (req: any, res: any) => {
-    res.sendFile(path.join(__dirname, "frontend", "index.html"))
-})
+
+// Catch-all for client-side routes - use a regex pattern
+app.use((req, res, next) => {
+    // Only handle GET requests that don't start with /api
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, "frontend", "index.html"));
+    } else {
+        next();
+    }
+});
+
 // Start the server
 async function startServer() {
     try {
@@ -212,8 +220,8 @@ async function startServer() {
         // Start the Express server
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`)
-            console.log(`Health check: http://localhost:${PORT}/health`)
-            console.log(`Status endpoint: http://localhost:${PORT}/status`)
+            console.log(`Health check: http://localhost:${PORT}/api/health`)
+            console.log(`Status endpoint: http://localhost:${PORT}/api/status`)
         })
         
         // Automatically start listening for events
