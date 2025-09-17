@@ -8,7 +8,7 @@
 
 ## 🚀 Live Application
 
-🌐 **[Live Demo]** - *[https://whistleblower-platform-hnosy5jou-awneets-projects.vercel.app/]*
+🌐 **[Live Demo]** - *[https://whistleblower-one.vercel.app/]*
 
 📹 **[Demo Video]** - *[https://youtu.be/bKrcB8PbHSk]*
 
