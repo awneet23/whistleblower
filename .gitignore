@@ -1,15 +1,22 @@
-# Environment variables
+node_modules
 .env
-.env.*
 
-# Node modules
-node_modules/
+# Hardhat files
+/cache
+/artifacts
 
-# Build outputs
-dist/
-build/
+# TypeChain files
+/typechain
+/typechain-types
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# solidity-coverage files
+/coverage
+/coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+ignition/deployments/chain-31337
+/zkit
+temp-register-proof.json
+temp-register-inputs.json
+/deployments
+/generated-types

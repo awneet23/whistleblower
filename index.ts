@@ -17,7 +17,13 @@ app.use(express.static(path.join(__dirname, "frontend")));
 const PORT = process.env.PORT || 3000
 
 const RPC_URL = process.env.RPC_URL
-const PRIVATE_KEY = process.env.ESCROW_PRIVATE_KEY as `0x${string}`
+let PRIVATE_KEY = process.env.ESCROW_PRIVATE_KEY as `0x${string}`
+
+if (!RPC_URL || !PRIVATE_KEY) {
+    throw new Error('RPC_URL and PRIVATE_KEY must be set')
+} else if (!PRIVATE_KEY.startsWith('0x')) {
+    PRIVATE_KEY = `0x${PRIVATE_KEY}`
+}
 
 // Setup clients and account
 const account = privateKeyToAccount(PRIVATE_KEY)
@@ -193,7 +199,7 @@ app.use((error: Error, req: express.Request, res: express.Response, next: expres
         error: error.message
     })
 })
-app.get('*', async (req: any, res: any) => {
+app.get('/', async (req: any, res: any) => {
     res.sendFile(path.join(__dirname, "frontend", "index.html"))
 })
 // Start the server

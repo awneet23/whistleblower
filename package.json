@@ -4,8 +4,9 @@
   "main": "index.js",
   "scripts": {
     "postinstall": "npm install --prefix frontend",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc && npm run build --prefix frontend"
+    "build": "npx tsc && npm run build --prefix frontend",
+    "dev": "npx tsx index.ts",
+    "start": "node build/index.js"
   },
   "keywords": [],
   "author": "",
